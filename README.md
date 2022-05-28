@@ -1,0 +1,2 @@
+# makeproj
+Makefile Project Template
