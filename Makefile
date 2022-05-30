@@ -8,21 +8,29 @@
 # make release - build everything, ARM target, no debug or gdb support, release config.
 # make local - build everything, local target (X86), debug config.
 # make clean - remove all generated files.
+# make allscp - same as 'make all' and "make" and copies test builds to remote target
+# make help - displays make options
 #
 # Notes:
-# 1) May need to change the CC and AR to use the target dev tool set,
+# 1) May need to change the XPREFIX and XPATH to use the target dev tool set,
 #    change the path to were you located the tool set of your target.
-# 2) May need to change TLIB to use the c librarys of your target,
-#    path to iso image of your target. You need this for your test app builds.
+# 2) May need to change TLIBS to use the c librarys of your target,
+#    path to iso image of your target. You need this foir your test app builds.
 # 3) Will need to change HOST and TARGET with you targets specifics.
 #    These settings support copying your test apps to the target
 # 4) To build graph docs you will need to have graphviz installed.
 #    To install graphviz:
 #       sudo apt install graphviz
+# 5) Naming Rules:
+#    a. All DAP files begin with a dap prefix and end with a .c or .h.
+#    b. All test files begin with test prefix and end with a .c
+#    c. All graph files end with a .dot
 
-CC=/home/gdc419/gcc-linaro/bin/arm-none-linux-gnueabihf-gcc
-AR=/home/gdc419/gcc-linaro/bin/arm-none-linux-gnueabihf-ar
-CFLAGS=-g -Wall -O0 -DDEBUG
+XPREFIX=arm-none-linux-gnueabihf-
+XPATH=/home/gdc419/gcc-linaro/bin
+CC=$(XPATH)/$(XPREFIX)gcc
+AR=$(XPATH)/$(XPREFIX)ar
+CFLAGS=-ggdb -Wall -O0 -DDEBUG
 AFLAGS=-cvrs
 
 # Library build
@@ -39,15 +47,15 @@ TSRC=src
 TSRCS=$(wildcard $(TSRC)/test*.c)
 TBIN=bin
 TBINS=$(patsubst $(TSRC)/%.c, $(TBIN)/%, $(TSRCS))
-#TODO needs to point to ARM iso image
-TLIBS =bin/dap.a -lpthread
+TLIBS =-L/srv/nfs/Apalis-iMX6_Console-Image-Tezi_3.0b4.254/lib/ -lpthread bin/dap.a
 
 HOST=~/Projects/$(BIN)
 TARGET=root@192.168.20.64:/home/root/
 CTT=scp
+CP=off
 
 # Graph file build
-# Options for flags: for pdf output use Tpdf, for jpg output use Tjpg
+# Options for GFLAGS: for pdf output use Tpdf, for jpg output use Tjpg
 GSRC=graph
 GSRCS=$(wildcard $(GSRC)/*.dot)
 GG=dot
@@ -57,6 +65,8 @@ GBINS=$(patsubst $(GSRC)/%.dot, $(GSRC)/%.$(GEXT), $(GSRCS))
 
 
 all: lib test graph
+allscp: CP=on
+allscp: lib test graph
 release: CFLAGS=-Wall -O0
 release: clean lib test graph
 local: CC=gcc
@@ -72,7 +82,7 @@ $(LIB): $(LOBJS)
 	file $@
 
 $(LOBJ)/%.o: $(LSRC)/%.c
-	@echo "\e[1mCompile $< \e[0m"
+	@echo "\e[1mCompiling $< \e[0m"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
@@ -81,11 +91,10 @@ test: $(TBINS)
 $(TBIN)/%: $(TSRC)/%.c
 	@echo "\e[1mBuilding Test program $< \e[0m"
 	$(CC) $(CFLAGS) $< -o $@ $(TLIBS)
+	$(if $(findstring on,$(CP)), $(CTT) $(HOST)/$@ $(TARGET), @echo "$@ not copied to remote")
 
-#	@echo "Copy $@ to target"
-#	$(CTT) $(HOST)/$@ $(TARGET)
 # creates doc files
-# may need to install graphviz
+# will need to install graphviz
 # sudo apt install graphviz
 graph: $(GBINS)
 
@@ -108,4 +117,6 @@ help:
 	@echo "make release - build everything, ARM target, no debug or gdb support, release config."
 	@echo "make local - build everything, local x86 target, debug config."
 	@echo "make clean - remove all generated files."
+	@echo "make allscp - same as 'make all' and "make" and copies test builds to remote target"
+
 
