@@ -13,14 +13,16 @@
 # 1) May need to change the CC and AR to use the target dev tool set,
 #    change the path to were you located the tool set of your target.
 # 2) May need to change TLIB to use the c librarys of your target,
-#    path to iso image of your target. You need this foir your test app builds.
-# 3) To build graph docs you will need to have graphviz installed.
+#    path to iso image of your target. You need this for your test app builds.
+# 3) Will need to change HOST and TARGET with you targets specifics.
+#    These settings support copying your test apps to the target
+# 4) To build graph docs you will need to have graphviz installed.
 #    To install graphviz:
 #       sudo apt install graphviz
 
 CC=/home/gdc419/gcc-linaro/bin/arm-none-linux-gnueabihf-gcc
 AR=/home/gdc419/gcc-linaro/bin/arm-none-linux-gnueabihf-ar
-CFLAGS=-g -Wall -o0 -DDEBUG
+CFLAGS=-g -Wall -O0 -DDEBUG
 AFLAGS=-cvrs
 
 # Library build
@@ -40,6 +42,10 @@ TBINS=$(patsubst $(TSRC)/%.c, $(TBIN)/%, $(TSRCS))
 #TODO needs to point to ARM iso image
 TLIBS =bin/dap.a -lpthread
 
+HOST=~/Projects/$(BIN)
+TARGET=root@192.168.20.64:/home/root/
+CTT=scp
+
 # Graph file build
 # Options for flags: for pdf output use Tpdf, for jpg output use Tjpg
 GSRC=graph
@@ -51,7 +57,7 @@ GBINS=$(patsubst $(GSRC)/%.dot, $(GSRC)/%.$(GEXT), $(GSRCS))
 
 
 all: lib test graph
-release: CFLAGS=-Wall -o0
+release: CFLAGS=-Wall -O0
 release: clean lib test graph
 local: CC=gcc
 local: AR=ar
@@ -76,7 +82,8 @@ $(TBIN)/%: $(TSRC)/%.c
 	@echo "\e[1mBuilding Test program $< \e[0m"
 	$(CC) $(CFLAGS) $< -o $@ $(TLIBS)
 
-
+#	@echo "Copy $@ to target"
+#	$(CTT) $(HOST)/$@ $(TARGET)
 # creates doc files
 # may need to install graphviz
 # sudo apt install graphviz
