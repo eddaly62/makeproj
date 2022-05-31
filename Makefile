@@ -64,15 +64,15 @@ GEXT=svg
 GBINS=$(patsubst $(GSRC)/%.dot, $(GSRC)/%.$(GEXT), $(GSRCS))
 
 
-all: lib test graph
+all: first lib test graph
 allscp: CP=on
-allscp: lib test graph
+allscp: first lib test graph
 release: CFLAGS=-Wall -O0
-release: clean lib test graph
+release: first clean lib test graph
 local: CC=gcc
 local: AR=ar
 local: TLIBS=bin/dap.a -lpthread
-local: lib test graph
+local: first lib test graph
 
 lib: $(LIB)
 
@@ -106,7 +106,7 @@ clean:
 	@echo "\e[1mClean everything\e[0m"
 	$(RM) -r obj/*
 	$(RM) -r bin/*
-	$(RM) -r graph/*.svg
+	$(RM) -r graph/*.$(GEXT)
 
 help:
 	@echo "\e[1mUsage:\e[0m"
@@ -119,4 +119,6 @@ help:
 	@echo "make clean - remove all generated files."
 	@echo "make allscp - same as 'make all' and "make" and copies test builds to remote target"
 
-
+first:
+	mkdir -p obj
+	mkdir -p bin
